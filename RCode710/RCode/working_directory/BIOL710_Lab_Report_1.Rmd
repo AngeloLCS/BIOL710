@@ -1,0 +1,227 @@
+---
+title: "Chapter 1 Introduction to R and RStudio"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+### Section 1 - anole
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+```
+
+### Sections 2 and 3 - anole
+These sections were completed by working on a copy of the RMarkdown Lab Report template and continuously adding comments to my code.
+
+### Section 4 - anole
+
+```{r}
+#import data from .csv file
+#commands header=TRUE in order to treat the first row of the data frame as a header and stringsAsFactors=TRUE to indicate that strings in the data frame should be treated as factor variables
+anole <- read.csv('anole.csv', header=TRUE, stringsAsFactors=TRUE)
+```
+
+### Section 5 - anole
+
+```{r}
+#overview of the dataset anole
+str(anole)
+```
+
+### Question Answers 
+a. The dataset "anole.csv" is of the class data frame
+b. "anole.csv" contains 164 total observations of 21 variables
+c. Within the dataset "anole.csv", variables labeled 'ID',   'Hurricane', 'Origin', and 'Sex' are of the class factor, while variables labeled 'SVL', 'Femur', 'Tibia', 'Metatarsal', 'LongestToe', 'Humerus', 'Radius', 'Metacarpal', 'LongestFinger', 'FingerArea1', 'FingerArea2', 'FingerArea3', 'ToeArea1', 'ToeArea2', and 'ToeArea3' are of the class numerical, and variables labeled 'FingerCount' and 'ToeCount' are of the class integer.
+
+
+```{r}
+# levels of the variable Sex, the $ sign means "within"
+levels(anole$Sex)
+
+# summary of each variable
+summary(anole)
+
+# first rows of anole
+head(anole)
+
+# viewing anole
+View(anole)
+```
+
+### Question Answers
+a. The variable 'Sex' has two levels
+b. The mean femur length in "anole.csv" is 10.919 units
+c. The first three variables in "anole.csv" are 'ID', 'Hurricane', and 'Origin'
+
+### Section 6 - anole
+
+```{r load-packages, message=FALSE}
+#loading the tidyverse package (previously downloaded and installed)
+library(tidyverse)
+```
+
+
+```{r}
+# selecting the column femur
+femurs <- select(anole, Femur)
+
+# checking the new object created
+#femurs
+```
+
+### Question Answers
+a. The object is in the Global Environment.
+
+```{r}
+# filtering femurs by femur length > 10mm
+femurs_10mm <- filter(femurs, Femur>10)
+
+# checking the new object created
+#femurs_10mm
+
+# ranking femur of length > 10mm
+max(femurs_10mm)
+```
+
+### Question Answers
+a. The longest femur length is 15.38mm
+b. There are 103 observations of femurs with length > 10mm
+
+### Section 7 - anole
+
+```{r}
+# mean femur length
+mean(anole$Femur)
+
+# median femur length
+median(anole$Femur)
+
+# minimum femur length
+min(anole$Femur)
+
+# max femur length
+max(anole$Femur)
+
+# range of values for femur length
+range(anole$Femur)
+```
+
+### Question Answers
+a. I did get the same results to populate as when I used the summary() function, only for the Femur variable.
+
+### Stop, Think, Do:
+
+### Section 1 - lizards
+
+```{r}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+```
+
+### Sections 2 and 3 - lizards
+These sections were completed by working on a copy of the RMarkdown Lab Report template and continuously adding comments to my code.
+
+### Section 4 - lizards
+
+```{r}
+#import data from .csv file
+#commands header=TRUE in order to treat the first row of the data frame as a header and stringsAsFactors=TRUE to indicate that strings in the data frame should be treated as factor variables
+lizards <- read.csv('lizards.csv', header=TRUE, stringsAsFactors=TRUE)
+```
+
+### Section 5 - lizards
+
+```{r}
+#overview of the dataset lizards
+str(lizards)
+```
+
+### Question Answers 
+a. The dataset "lizards.csv" is of the class data frame
+b. "lizards.csv" contains 104 total observations of 21 variables
+c. Within the dataset "lizards.csv", variables labeled 'ID',   'Hurricane', 'Origin', and 'Sex' are of the class factor, while variables labeled 'SVL', 'Femur', 'Tibia', 'Metatarsal', 'LongestToe', 'Humerus', 'Radius', 'Metacarpal', 'LongestFinger', 'FingerArea1', 'FingerArea2', 'FingerArea3', 'ToeArea1', 'ToeArea2', and 'ToeArea3' are of the class numerical, and variables labeled 'FingerCount' and 'ToeCount' are of the class integer.
+
+```{r}
+# levels of the variable Sex, the $ sign means "within"
+levels(lizards$Sex)
+
+# summary of each variable
+summary(lizards)
+
+# first rows of lizards
+head(lizards)
+
+# viewing lizards
+View(lizards)
+```
+
+### Question Answers
+a. The variable 'Sex' has two levels
+b. The mean femur length in "lizards.csv" is 10.859 units
+c. The first three variables in "lizards.csv" are 'ID', 'Hurricane', and 'Origin'
+
+### Section 6 - lizards
+
+```{r}
+#loading the tidyverse package (previously downloaded and installed)
+library(tidyverse)
+```
+
+
+```{r}
+# selecting the column femur
+lemurs <- select(lizards, Femur)
+
+# checking the new object created
+#lemurs
+```
+
+### Question Answers
+a. The object is in fact in the Global Environment.
+
+```{r}
+# filtering femurs by femur length > 10mm
+lemurs_10mm <- filter(lemurs, Femur>10)
+
+# checking the new object created
+#lemurs_10mm
+
+# ranking femur of length > 10mm
+max(lemurs_10mm)
+```
+
+### Question Answers
+a. The longest femur length is 15.38mm
+b. There are 61 observations of femurs with length > 10mm
+
+### Section 7 - lizards
+
+```{r}
+# mean femur length
+mean(lizards$Femur)
+
+# median femur length
+median(lizards$Femur)
+
+# minimum femur length
+min(lizards$Femur)
+
+# max femur length
+max(lizards$Femur)
+
+# range of values for femur length
+range(lizards$Femur)
+```
+
+### Question Answers
+a. I did get the same results to populate as when I used the summary() function, only for the Femur variable.
+
+### Discussion Question Answers
+a. The layout in RStudio is comprised of a script window in which one can write live code, a console in which one can make quick commands and review script code that has been run, a global environment that keeps track of data frames, and a files/plots/packages that can serve to see active packages and set a working directory
+b. Annotating one's script can be beneficial for learning what certain functions and lines of code can do. It can also help with leaving a trace of one's thought process when they return to their code after a long period of time. Lastly, annotating is crucial for being able to share code with others so that they can more easily interpret your script and apply it to their needs.
+c. One can set a path between R and the location of one's files in the computer by clicking on the files tab of the files/plots/packages pane (principal component window), advancing to the folder in which one desires to set up their working directory and applying it after clicking on the gear icon.
+d. The str() function can be used to get a broad overview of an imported data file, including the structure of the data itself, as well as the total number of observations and variables with their respective variable categorizations and levels.
+
