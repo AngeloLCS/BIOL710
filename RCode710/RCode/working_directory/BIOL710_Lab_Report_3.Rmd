@@ -1,0 +1,154 @@
+---
+title: "Chapter 2 Data Sampling, Accuracy, and Precision"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+### Section 1 - Setup and Image Analysis
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+### Section 2A - Data Analysis, Importing Data
+
+```{r}
+# Importing data
+canine <- read.csv("LaCommare-SotoAngelo_bobcat.csv",header=TRUE)
+
+# viewing the data
+canine
+```
+
+### Question Answers 
+a. Each column in the dataset 'canine' represents a variable for canine images.
+b. Each row in the dataset 'canine' represents an observation of a canine image.
+
+
+### Section 2B - Summarizing Data
+
+```{r}
+# summarizing the data
+s <- summary(canine)
+s
+```
+
+### Question Answers
+a. Each column in the summary represents a variable in the dataset 'canine'.
+b. I did get the expected sample size of three measurements per canine by viewing the data frame.
+
+### Section 2C - Summary in a Different Way
+
+```{r}
+# minimum length value 
+m1 <- min(canine$length_cm)
+m1
+
+# maximum length value
+m2 <- max(canine$length_cm)
+m2
+
+# mean length value
+m3 <- mean(canine$length_cm)
+m3
+
+# median length value
+m4 <- median(canine$length_cm)
+m4
+```
+
+```{r}
+# filter data for splitting data table between right and left canines
+lc <- canine %>% filter (tooth_side == 'left')
+lc
+
+rc <- canine %>% filter (tooth_side == 'right')
+rc
+
+# minimum length value per side
+m1_lc <- min(lc$length_cm)
+m1_lc
+
+m1_rc <- min(rc$length_cm)
+m1_rc
+
+# maximum length value per side
+m2_lc <- max(lc$length_cm)
+m2_lc
+
+m2_rc <- max(rc$length_cm)
+m2_rc
+
+# mean length value per side
+m3_lc <- mean(lc$length_cm)
+m3_lc
+
+m3_rc <- mean(rc$length_cm)
+m3_rc
+
+# median length value per side
+m4_lc <- median(lc$length_cm)
+m4_lc
+
+m4_rc <- median(rc$length_cm)
+m4_rc
+```
+
+### Section 2D - Estimating Accuracy and Precision (All)
+
+```{r}
+# true population mean length of bobcat canines
+TV=(1.3775+1.2315)/2
+TV
+
+# accuracy 
+a <- abs(m3-TV) 
+a
+
+# precision
+p <- m2-m1
+p
+```
+
+### Question Answers
+a. In general, my canine length measurements were inaccurate (average of 1.5 mm off of true mean), which is greater than a small tick-mark on the reference ruler.
+b. However, my canine length measurements were generally precise (max-min = 0.45 mm), which is lower than a small tick-mark on the reference ruler.
+
+### Section 2E - Estimating Accuracy and Precision (Left and Right)
+
+```{r}
+# True population mean length of left canine for bobcats: 1.3775 cm
+# accuracy for left canine
+a_lc <- abs(m3_lc-1.3775) 
+a_lc
+
+# precision for left canine
+p_lc <- m2_lc-m1_lc
+p_lc
+
+# True population mean length of left canine for bobcats: 1.2315 cm
+# accuracy for right canine
+a_rc <- abs(m3_rc-1.2315) 
+a_rc
+
+# precision for right canine
+p_rc <- m2_rc-m1_rc
+p_rc
+```
+
+### Question Answers
+a. My measurements for the left canine are more accurate than my measurements for the right canine. Overall, I would consider my left canine measurements accurate, as they are only 0.675 mm off of the true mean, on average, which is a small percentage of the mean length. My right canine measurements are not accurate, as they are about 2.472 mm off of the true mean, which is a larger percentage of the mean length.
+b. However, my measurements for the left canine are two times less precise (max-min = 0.18 mm) than my measurements for the right canine (max-min = 0.09 mm). Nonetheless, I would consider my measurements for both left and right canines to be precise.
+c. Some factors that may have impacted the accuracy of my measurements was the placement of the ruler relative to the canine. The physical distance between canine and ruler in the image may have caused the gradations in the ruler to get slightly distorted relative to the tooth. Some factors that may have impacted the precision of my measurements was arbitrarily deciding to what point to extend my measurement from the point of the canine.
+
+### Stop, Think, Do
+This portion of exploring the length measurements of the right upper canine for my carnivore was done throughout the code above.
+
+### Discussion Question Answers
+a. Highly accurate measurements can have low precision if they contain lots of outliers, but a majority of measurements hover over the true mean.
+b. If I estimate a difference between the maximum and minimum value of 5 cm and my classmate estimates a difference of 2 cm, my classmate's measurements are more precise.
+c. A source of sampling error in this activity is the decision on how to measure the canine from the point to the skull. Since the tooth is slightly curved, I measured a slightly diagonal line. A source of bias in this activity is the decision of which gradation marks to use for setting a pixel-to-length scale.
+
