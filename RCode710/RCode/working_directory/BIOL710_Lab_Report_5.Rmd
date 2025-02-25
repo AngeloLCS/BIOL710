@@ -1,0 +1,284 @@
+---
+title: "Chapter 5 Hypothesis Testing"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+# Importing data
+cayo <- read.csv("cayo.csv",header=TRUE)
+
+# viewing the structure of the data
+str(cayo)
+head(cayo)
+```
+
+### Question Answers
+a. The 'cayo' dataset has 1480 observations of 8 variables.
+b. Given the question 'Does age at death vary across age in females?', we are interested in the 'sex' and 'age_at_death' variables.
+
+### Section 2 - Infering Population Parameters from Random Samples
+
+```{r}
+# plotting counts, the function floor() rounds variable to the smallest whole number
+p1 <- ggplot(cayo,aes(x=floor(age_at_death))) +
+  geom_histogram(binwidth = 1) +
+  xlab("Age at death (years)") +
+  ylab("Frequency")
+p1
+
+# plotting proportions, ..count.. tallies the number of observations per unit (bin) on the x-axis from left to right.
+p2 <- ggplot(cayo,aes(x=floor(age_at_death))) +
+   geom_histogram(aes(y=..count../sum(..count..)),binwidth = 1) +
+   xlab("Age at death (years)") +
+   ylab("Frequency")
+p2
+```
+
+```{r}
+# Estimating mean and sd population parameters for age at death
+# mean age at death
+mu <- mean(cayo$age_at_death)
+mu
+
+# standard deviation of age at death
+sigma <- sd(cayo$age_at_death)
+sigma
+```
+
+### Question Answers
+a. Age 0 (or newborn) monkeys experience a higher probability of deaths.
+b. mu = 4.69 years of age is the population mean age of death for the monkeys. sigma = 6.18 years of age is the standard deviation, a measure of the precision of the mean age of death for the monkeys.
+
+```{r}
+# checking the levels in the variable sex
+levels(as.factor(cayo$sex))
+```
+
+### Question Answers
+a. The 'sex' categories are 'f' for female, 'm' for male, and 'u' for unknown.
+b. Given that there are unknown categories of 'sex', we can only estimate a sampling distribution of sample means (average measure) and sample standard deviations (spread measure) for statistics involving the sexes.
+
+```{r}
+# Estimating the mean age at death and its sd for females
+# filtering by females
+fem <- filter(cayo,sex=="f")
+str(fem)
+
+# mean age at death of females
+m_fem <- mean(fem$age_at_death)
+m_fem
+
+# standard deviation for females
+s_fem <- sd(fem$age_at_death)
+s_fem
+```
+
+### Challenge 1: Plot the Distribution of Age at Death for Females.
+
+```{r}
+# plotting counts
+p3 <- ggplot(fem,aes(x=floor(age_at_death))) +
+  geom_histogram(binwidth = 1) +
+  xlab("Age at death (years)") +
+  ylab("Frequency")
+p3
+```
+
+### Question Answers
+a. Females in the age classes of 0 and 1 experience more deaths.
+b. The pattern of age at death for females does not differ much at all from the entire population distribution.
+
+### Section 3 - Estimating the Sampling Distribution
+
+```{r}
+# sample() allows to randomly sample a dataframe
+# creating a new object to add the 10,000 sample statistics
+r500 <- NULL 
+
+# loop for sampling 500 females at random and estimate the mean age at death
+for(i in 1:10000){
+  temporarySample <- sample(floor(fem$age_at_death), size = 500,
+                                   replace = FALSE)
+  r500[i] <- mean(temporarySample)
+}
+
+r500 <- as.data.frame(r500)
+
+# viewing the new data frame created
+#View(r500)
+
+# plotting the sampling distribution
+p4 <- ggplot(r500,aes(x=r500)) +
+  geom_histogram(aes(y=..count../sum(..count..)),binwidth = .1) +
+  xlab("Female age at death (years)") +
+  ylab("Probability")
+p4
+```
+
+### Question Answers
+a. The above sampling distribution is centered around the previous sample mean of 5.64 years of age at death for females.
+b. The standard deviation value of 6.80 years of age at death for females in the previous sample serves as a proxy for the width of the normal distribution of 10000 means.
+c. If we were to re-run the exercise with a sample of 50 females, the sample mean might be similar, but the sample standard deviation will increase.
+
+### Section 4 - Estimating the Standard Error
+
+```{r}
+# standard error of the mean
+se_fem <- s_fem/sqrt(737)
+se_fem
+```
+
+### Question Answer
+a. With a Standard Error (SE) of 0.25 years, the sample mean for female monkeys is relatively precise.
+
+### Section 5 - Plotting the Probability Distribution of the Mean Age at Death
+
+```{r}
+# probability density distribution for females
+#geom_density() creates a smooth version of a histogram via kernel interpolation
+p5 <- ggplot(fem,aes(age_at_death)) +
+  geom_density() +
+  xlab("Female age at death (years)") +
+  ylab("Probability density")
+p5
+
+```
+
+### Question Answer
+a. There is a pattern of much greater probabilities of death in the early years of female monkey lives, particularly just after birth. This makes sense biologically since newborn primates are very fragile and require a lot of care.
+
+### Section 6 - Estimating the Probability of Two or More (Survival) Events
+
+```{r}
+# Dying and surviving in a particular age are two mutually exclusive events; we either die or survive. Thus, if we know the probability of dying at a particular age, we can define the probability of not dying (i.e., surviving) at such age. Let’s estimate the probability of surviving for the most vulnerable ages; from birth to 2 years of age.
+# frequency table of age at death of females
+table(floor(fem$age_at_death))
+
+# proportion of deaths during the first year of life
+m0 <- 249/737
+m0
+
+# survival during the first year of life
+s0 <- 1-m0
+s0
+
+# proportion of deaths during the second year of life
+m1 <- 120/(737-249)
+m1
+
+# survival during the second year of life
+s1 <- 1-m1
+s1
+
+# probability of surviving from birth to 2 years of age 
+s0*s1
+```
+
+### Question Answers
+a. Because I wanted to know the probability of surviving past the first two age classes, the probabilities of surviving past each stage must be multiplied.
+b. The probability that a female monkey will survive to age 2 is 0.499.
+
+### Stop, Think, Do - Answer the Following Research Question: Do hurricanes affect survival from birth to 2 years of age?
+
+```{r}
+# Hurricane year dataframe for females
+# filtering previously created fem dataframe by hurricane year
+hurri <- filter(fem, treatment=="hurricane")
+str(hurri)
+
+# mean age at death of females
+m_hurri <- mean(hurri$age_at_death)
+m_hurri
+
+# standard deviation for females
+s_hurri <- sd(hurri$age_at_death)
+s_hurri
+```
+
+```{r}
+# frequency table of age at death of females during hurricanes
+table(floor(hurri$age_at_death))
+```
+
+```{r}
+# Hurricane proportions
+# proportion of deaths during the first year of life
+m0_hurri <- 16/52
+m0_hurri
+
+# survival during the first year of life
+s0_hurri <- 1-m0_hurri
+s0_hurri
+
+# proportion of deaths during the second year of life
+m1_hurri <- 10/(52-16)
+m1_hurri
+
+# survival during the second year of life
+s1_hurri <- 1-m1_hurri
+s1_hurri
+
+# probability of surviving from birth to 2 years of age 
+s0_hurri*s1_hurri
+```
+
+```{r}
+# Normal or control year dataframe for females
+# filtering previously created fem dataframe by normal or control year
+ctrl <- filter(fem, treatment=="control")
+str(ctrl)
+
+# mean age at death of females
+m_ctrl <- mean(ctrl$age_at_death)
+m_ctrl
+
+# standard deviation for females
+s_ctrl <- sd(ctrl$age_at_death)
+s_ctrl
+```
+
+```{r}
+# frequency table of age at death of females during normal years
+table(floor(ctrl$age_at_death))
+```
+
+```{r}
+# Hurricane proportions
+# proportion of deaths during the first year of life
+m0_ctrl <- 233/685
+m0_ctrl
+
+# survival during the first year of life
+s0_ctrl <- 1-m0_ctrl
+s0_ctrl
+
+# proportion of deaths during the second year of life
+m1_ctrl <- 110/(685-233)
+m1_ctrl
+
+# survival during the second year of life
+s1_ctrl <- 1-m1_ctrl
+s1_ctrl
+
+# probability of surviving from birth to 2 years of age 
+s0_ctrl*s1_ctrl
+```
+
+The above analysis demonstrates that the probability of female survival to two years of age does not differ between hurricane years (0.500) and normal years (0.499).
+
+### Discussion Question Answers
+a. A population distribution would be the standard length measurements of all California halibut in San Francisco Bay on the first day of May, 2025. A sampling distribution would be the frequency of means of multiple random samples of 100 captured and measured California Halibut in San Francisco Bay.
+b. The measure of precision in the previous lab (Chapter 2) involved taking the range of measured values for a sample size of three observations. The measure of precision in this lab involved calculating the standard error of the mean for a sample size of 737 observations.
+c. To apply the multiplication rule in our survival exercise, we must assume that death and survival in different age classes are mutually exclusive events.
+
