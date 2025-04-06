@@ -1,0 +1,161 @@
+---
+title: "Chapter 7 "
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+### Size Structure of Round Stingrays
+
+### Research Question 1: What is the size structure of the population of round stingrays in Seal Beach?
+
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+# Importing data
+ray <- read.csv("ray.csv",header=TRUE)
+
+# viewing the structure of the data
+str(ray)
+head(ray)
+```
+
+### Question Answers
+a. The 'ray' dataset has 2427 observations of 11 variables.
+b. Given the question 'What is the size structure of the population of round stingrays in Seal Beach?', we are interested in the 'disc_width' numerical variable.
+
+### Section 2 - Estimating the Distribution of Body Sizes
+
+```{r}
+# summary of disc width
+summary(ray$disc_width)
+```
+
+### Challenge: Create Two Useful Visualizations with this Data
+
+```{r}
+# Creating a frequency distribution of sizes
+p1 <- ggplot(ray, aes(x=disc_width)) + geom_histogram()
+p1
+```
+
+### Question Answers
+a. The distribution of disc width for round stingray does appear to be normally distributed based on the above quick and dirty histogram. 
+b. However, in order to properly determine the normality of the data, we need to calculate some statistics and run some statistical tests that require the mean and standard deviation of the dataset.
+
+### Section 3 - Fit a Normal Distribution to the Disc Width Data
+
+```{r}
+# mean disc width 
+m <- mean(ray$disc_width)
+m
+
+# standard deviation of disc width
+sd <- sd(ray$disc_width)
+sd
+```
+
+```{r}
+# plotting the density probability of disc width
+p2 <- ggplot(ray,aes(x=disc_width)) +
+geom_density()
+
+p2
+
+# fitting a normal distribution
+p3 <- p2 + stat_function(fun = dnorm, n = 2427, args = list(mean = m, sd = sd),colour="red")
+
+p3
+```
+
+```{r}
+# Quick calculations
+m-sd
+
+m+sd
+
+m-2*sd
+
+m+2*sd
+
+SE <- sd/sqrt(nrow(ray))
+SE
+```
+
+
+### Question Answers
+a. Assuming a normal distribution, the disc width values from 13.66cm to 19.32cm make up 68.3% of the data.
+b. Assuming a normal distribution, the disc width values from 10.83cm to 22.15cm make up 95% of the data.
+c. The standard error (precision) for the mean disc width of round stingrays is 0.057cm.
+
+### Section 4 - Estimating the Standard Normal Distribution for Size
+
+```{r}
+# creating a new row in the dataframe not using mutate
+# estimating Z for disc width
+ray$z <- (ray$disc_width-m)/sd
+
+# checking the new column in "ray"
+head(ray)
+
+# plotting z
+p4 <- ggplot(ray,aes(x=z)) +
+geom_density()
+
+p4
+```
+
+```{r}
+# probability of getting a disc width equal to or less than 13 cm under a normal distribution
+p_small <- pnorm(13, mean = m, sd = sd)
+p_small
+```
+
+### Question Answer
+a. The probability of a randomly sampled round stingray having a disc width of 13cm or less is 0.109.
+
+### Stop, Think, Do: Estimate the probability that a randomly sampled round stingray in Seal Beach is small, medium, or large.
+
+```{r}
+# Given that the maximum size considered small is 13cm, we already calculated the probability 
+#for randomly capturing a small round skate
+# Checking the maximum size that the researchers categorize as medium
+med_ray <- filter(ray, size_class == 'Medium')
+head(med_ray)
+max(med_ray$disc_width)
+```
+
+```{r}
+# Calculating the probability of a medium round stingray under a normal distribution
+p_sm_md <- pnorm (16.5, mean = m, sd = sd)
+p_medium = p_sm_md - p_small
+p_medium
+```
+
+```{r}
+# Calculating the probability of a large round stingray under a normal distribution
+p_large <- pnorm (16.5, mean = m, sd = sd, lower.tail = FALSE)
+p_large
+
+p_small + p_medium + p_large
+```
+
+The following are the probabilities of capturing a round stingray of small, medium, and large sizes based on the normal distribution model:
+Small: 0.109
+Medium: 0.392
+Large: 0.499
+
+### Discussion Question Answers
+a. The normal distribution is a probability distribution of a continuous variable with a symmetrical bell shape centered at the mean with a spread that is dictated by the standard deviation.
+b. Conversely, the standard normal distribution is a transformed normal distribution for a random variable centered at a mean z-score of zero with a standard deviation of one. The standardization of a normal distribution via the conversion into a z-score allows for the comparison of different normal distributions on different scales.
+c. Sample size does not determine individual z-scores. However, larger sample sizes increase the precision of the data by reducing the standard error.
+
+
+

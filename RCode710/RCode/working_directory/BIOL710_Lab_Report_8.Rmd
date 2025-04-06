@@ -1,0 +1,137 @@
+---
+title: "Chapter 8 Comparing Two Means: The t-test"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+### Detecting Sexual Dimorphism Using a t-test
+
+### Research Question 1: Is there a difference in mean body length between male and female Tamias minimus?
+
+### Section 1 - Analyzing *Tamias minimus* Digital Images
+
+Completed - see 'LaCommare-SotoAngelo_chipmunk.csv' below.
+
+### Section 2 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+# Importing data
+chipmunk <- read.csv("LaCommare-SotoAngelo_chipmunk.csv",header=TRUE)
+
+# viewing the structure of the data
+str(chipmunk)
+head(chipmunk)
+```
+
+### Question Answers
+a. H0: There is no sexual dimorphism between body lengths of male and female *Tamias minimus*. 
+   HA: There is sexual dimorphism between body lengths of male and female *Tamias minimus*.
+b. A two-sample t-test is most appropriate to answer the research question of 'Is there a difference in mean body length between male and female *Tamias minimus*?'.
+
+### Section 3 - Estimating the t-statistic
+
+```{r}
+# Calculating important statistics for male and female group of chipmunks
+male <- filter(chipmunk, sex == 'M')
+m_mean <- mean(male$length_cm)
+sd_male <- sd(male$length_cm)
+m_df <- nrow(male)-1
+
+female <- filter(chipmunk, sex == 'F')
+f_mean <- mean(female$length_cm)
+sd_female <- sd(female$length_cm)
+f_df <- nrow(female)-1
+```
+
+```{r}
+# Calculating the pooled sample variance
+psv <- ((m_df*(sd_male^2))+(f_df*(sd_female^2)))/(m_df+f_df)
+```
+
+```{r}
+# Calculating the Standard Error
+SE_xm_xf <- sqrt(psv*((1/nrow(male))+(1/nrow(female))))
+```
+
+```{r}
+# Calculating the t-statistic
+t <- (m_mean-f_mean)/SE_xm_xf
+t
+```
+
+### Question Answer
+a. When looking at the critical values of the single tail t-distribution in a statistical table (statsexamples.com), we find that for df=28 and a t-statistic of -4.034, the p-value is less than 0.001, which, adjusting for a two tails makes the p-value less than 0.002. Therefore, we reject the null hypothesis (p < 0.05) and can state that there is a significant difference in mean body length between males and females. More specifically, females were longer than males.
+
+### Challenge - Check work with t.test()
+
+```{r}
+t.test(male$length_cm, female$length_cm, alterative = "two.sided", var.equal = TRUE)
+```
+
+### Section 4 - Visualizing the Data
+
+```{r}
+# Creating a table of descriptive statistics using R package rstatix.
+# installing the package
+install.packages("rstatix",repos="http://cran.us.r-project.org")
+
+# loading package
+library(rstatix)
+```
+
+```{r}
+# For this, we use the function get_summary_stats() where the first argument is the response variable, the second argument is the response variable we want to summarize (e.g., body length), and the third argument is the categorical variable that groups the response variable (e.g., sex).
+# summary statistics
+sum <- chipmunk %>% 
+      group_by(sex) %>% 
+      get_summary_stats(length_cm)  
+```
+
+```{r}
+# bar plot with error bars for standard error
+p1 <- ggplot(sum,aes(x=sex,y=mean)) +
+    geom_bar(stat="identity") +
+    geom_errorbar(aes(min=mean-se, max=mean+se), width=0.2) +
+    theme_classic(15) +
+    ylab("Body length (cm)") +
+    xlab("Sex")
+p1
+```
+
+### Section 5 - Checking the Model Assumptions of Normality
+
+```{r}
+# histogram of all body lengths
+p2 <- ggplot(chipmunk,aes(x=length_cm)) +
+  geom_histogram()
+p2
+
+# histogram of male body lengths
+p3 <- ggplot(male,aes(x=length_cm)) +
+  geom_histogram()
+p3
+
+# histogram of female body lengths
+p4 <- ggplot(female,aes(x=length_cm)) +
+  geom_histogram()
+p4
+
+```
+
+### Question Answer
+a. The assumption of normality per sex group does hold for males, but not females. The male body length histogram has a clear and centered peak at around 11.3cm, and uniform tails. The female body length histogram has a slight left skew centered at about 13cm. However, given the small sample sizes, it is difficult to confidently determine normality.
+
+### Discussion Question Answers
+a. The t-statistic of -4.0336 with a df=28 indicates an extreme result that suggest a statistically significant difference between the mean body length of male chipmunk and the mean body length of female chipmunks.
+b. The 95% CI of -2.083 and -0.680 indicates a statistically significant difference between male and female body lengths since it does not include zero, as well as an estimate of the degree and direction of difference in mean body length between the sexes for the chipmunk population. In this case, we are 95% confident that female chipmunks are 0.680cm to 2.083cm larger than male chipmunks.
+c. If I was interested in testing whether the mean body length of my sample of 15 females is different from the known mean body length of another sampled population, I would use a one-sample t-test. This is because the known mean body length of a larger sample population that is more representative of the true body lengths would be a single known value to compare with my sample.
+
+

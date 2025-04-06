@@ -1,0 +1,140 @@
+---
+title: "Chapter 9 One-way Analysis of Variance"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### Toxic Substances and Gene Regulation
+
+### Research Question 1: Does triclosan suppress gene expression in hypothalamic cells?
+
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+#commands header=TRUE in order to treat the first row of the data frame as a header and stringsAsFactors=TRUE to indicate that strings in the data frame should be treated as factor variables
+gene <- read.csv("gene.csv",header=TRUE,stringsAsFactors = TRUE)
+str(gene)
+head(gene)
+```
+
+### Question Answers 
+a. The dataset "gene.csv" contains 36 total observations of 3 different variables.
+b. Given the question 'Does triclosan suppress gene expression in hypothalamic cells?', we are interested in the 'treatment' and 'ct' variables.
+c. Given that the variable 'treatment' has three levels, I will compare three treatment groups.
+
+### Section 2 - Carrying out a One-way Analysis of Variance
+
+```{r}
+# ANOVA
+gene_aov <- aov(ct~treatment,data=gene)
+gene_aov
+
+# ANOVA table
+summary(gene_aov)
+```
+
+### Section 3 - Estimating the R^2
+
+```{r}
+# R squared
+gene_R2 <- 10.32/(10.32+27.41)
+gene_R2
+```
+
+### Question Answer
+a. About 27.35% of the variation in the data is explained by differences among treatment groups.
+
+### Challenge 1 - Plotting the ANOVA Data
+
+```{r}
+# creating a boxplot with means
+p1 <- ggplot(gene,aes(x=treatment,y=ct, fill=treatment)) +
+  geom_boxplot() +
+  stat_summary(fun=mean, geom = 'point', shape = 8, size = 2)+
+  ylab("Gene Expression (ct)") +
+  xlab("Treatment") +
+  theme(legend.position='none')
+p1
+```
+
+### Section 4 - Carrying Out a Multiple Comparison Using the Tukey Test
+
+```{r}
+# Tukey test
+t <- TukeyHSD(gene_aov)
+t
+
+# Visualization of the Tukey test
+plot(t)
+```
+
+### Question Answers
+a. Not all treatment groups differ from one another. The mean response of the 1 micromolar treatment of triclosan is not very different from the mean response of the negative control treatment. On the other hand, the mean response of the 10 micromolar treatment of triclosan is different from both the mean responses of the negative control  1 micromolar treatments of triclosan.
+b. These results indicate that a higher concentration of triclosan is associated with a decrease in the gene expression of GnRH.
+c. The assumptions of the ANOVA are 1) independence of observations, 2) normality within groups, and 3) and homoscedasticity (variance equality between groups).
+
+### Section 5 - Checking Model Assumptions
+
+```{r}
+# In an ANOVA, the model residuals (the difference between each observation and the mean value) should be normally distributed
+
+# extracting model residuals
+gene_aov_res <- residuals(gene_aov)
+gene_aov_res
+
+# converting aov_res into a dataframe for ggplot
+gene_aov_res_df <- as.data.frame(gene_aov_res)
+gene_aov_res_df
+
+# histogram of model residuals
+p2 <- ggplot(gene_aov_res_df, aes(x = gene_aov_res)) +
+  geom_histogram(binwidth = 0.1)
+p2
+```
+
+```{r}
+# The aov() function (done originally in the 3rd chunk) prepares the data for model checking plots: a plot of residuals vs fitted values, a Q-Q plot, a scale-location plot, and a constant-leverage plot.
+# model checking plots
+plot(gene_aov)
+```
+
+```{r}
+# Another way we can test for normality in our data is by employing a Shapiro test. In this test, the null hypothesis states that our model residuals comes from a normal distribution. For this, we can use shapiro.test()
+
+shapiro.test(gene_aov_res)
+```
+
+### Question Answer
+a. Given the W statistic of 0.911 and its associated p-value of 0.007, there is sufficient evidence to reject the null hypothesis of the Schapiro test, which states that our model residuals comes from a normal distribution. Therefore, it is unlikely that the data is normally distributed.\
+
+### Section 6 - Testing for Equal Variances
+
+```{r}
+# Finally, we can use the Barlett’s test to test for equal variances. For this, we will use the function bartlett.test(). The first argument of the function is the response variable, followed by the explanatory variable (factor)
+
+bartlett.test(ct~treatment, data=gene)
+
+# If the test results in a p-value > 0.05, then the data has equal variance (no difference in variance across factors) 
+```
+
+```{r}
+# Hypothetically, if the variances are significantly different across factors, then the we have to transform the data. Transforming data means applying some mathematical expression to the response variable in an attempt to meet the assumptions for the ANOVA. You can use the following general command
+
+# transforming the data using the natural log
+# transformed <- log(response_variable)  
+```
+
+### Discussion Question Answers
+a. The estimated F statistic of 6.213 indicates that the variation among triclosan treatment group means was about 6 times larger than that of the variation within triclosan treatment groups.
+b. The estimated coefficient of determination, R^2, of 0.2735 signifies that about 27.35% of the variation in the data is explained by differences among triclosan treatment groups, according to our ANOVA statistical model.
+c. We test for model assumptions to ensure that our models are good fits for our data when attempting to derive statistical significance. On the other hand, model assumption testing can be good practice for fine tuning experimental set-ups to result in data that can be interpreted by statistical models.
+

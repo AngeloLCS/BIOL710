@@ -1,0 +1,248 @@
+---
+title: "Chapter 6 Population Proportions and the Binomial Distribution"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+### Avian Alarm Calls in the Tropics
+
+### Research Question 1: Does the presence of a predator increases the proportion of alarm calls produced by sentinel birds?
+
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+# Importing data
+alarm <- read.csv("alarm.csv",header=TRUE)
+
+# viewing the structure of the data
+str(alarm)
+head(alarm)
+```
+
+### Question Answers
+a. The 'alarm' dataset has 369 observations of 28 variables.
+b. Given the question 'Does the presence of a predator increases the proportion of alarm calls produced by sentinel birds?', we are interested in the 'RAPTOR' and 'Alarm_Call' variables.
+c. Considering the response variable of 'Alarm_Call', a success is represented by a 1, which is an alarm call.
+
+### Section 2 - Estimating the Binomial Formula
+
+
+```{r}
+# ensuring the levels of the variable Raptor read as a factor
+levels(as.factor(alarm$RAPTOR))
+
+# filtering "alarm" for control trials only 
+control <- filter(alarm,RAPTOR=="CONTROL")
+
+# filtering "alarm" for raptor trials only, syntax of != gives the values that are everything but what == would give 
+raptor <- filter(alarm,RAPTOR!="CONTROL")
+```
+
+```{r}
+# Estimating the binomial formula using raptor dataframe
+# number of trials n 
+n <- length(raptor$RAPTOR)
+
+# number of successes X (alarms)
+X <-sum(raptor$Alarm_Call)
+
+# observed proportion of successes in sample population p_hat
+p_hat <- X/n
+```
+
+```{r}
+# Estimating the binomial function formula using dbinom()
+# example: the probability of getting exactly 100 alarm calls with n=337 and p_hat=0.303.
+dbinom(100,n,p_hat)
+```
+
+### Section 3 - Estimating the Binomial Probability Distribution
+
+```{r}
+# all possible values of X out of n trials
+X_success <- 0:n
+# X_success 
+
+# binomial probabilities (same function as above)
+prob_X <- dbinom(X_success, n, p_hat)
+# prob_X
+```
+
+```{r}
+# generating a dataframe with X_success and binomial probabilities for the plot
+probTable <- data.frame(X_success, prob_X)
+# probTable
+
+# binomial probability distribution plot
+p1 <- ggplot(probTable,aes(x=X_success,y=prob_X)) +
+  geom_bar(stat = "identity") +
+  ylab("Probability") +
+  xlab("Number of alarm calls") +
+  theme_classic(20)
+p1
+```
+
+### Question Answers
+a. The probability of 120 sentinel birds out of 337 trials producing an alarm call is 0.00497.
+b. The number of alarm calls with the highest probability out of the 337 trials is 102.
+
+### Section 4 - Estimating the Standard Error of the Proportion
+
+```{r}
+# standard error of p as in probability
+SE <- sqrt((p_hat*(1-p_hat))/n)
+SE
+```
+
+### Section 5 - Testing the Hypothesis Using the Binomial Test
+
+```{r}
+# proportion of birds producing alarm calls in a control trial; note use of two dataframes
+p_null <- sum(control$Alarm_Call)/length(control$RAPTOR)
+p_null
+```
+
+Considering our research question, our null and alternative hypotheses are:
+
+H0: In the presence of raptors, 3.125% of sentinel birds produce an alarm call.
+
+HA: In the presence of raptors, the proportion of sentinel birds producing an alarm call is not 3.125%.
+
+```{r}
+# binomial test
+binom.test(X, n, p_null)
+```
+
+### Question Answers
+a. The presence of a predator does increase the proportion of alarm calls produced by sentinel birds; the sample probability of alarm calls in the presence of raptors of 0.303 is much higher than the probability of alarm calls in the control treatment of raptor absence of 0.031.
+b. Therefore, we can make an argument that raptors are a major driver in shaping the landscape of fear of Amazonian birds.
+
+### Research Question 2: Is raptor size a visual cue driving the proportion of sentinel birds producing alarm calls?
+
+### Stop, Think, Do: Answer Research Question 2.
+
+```{r}
+# Creating a new data table for size of raptor and eliminating NA values
+size <- filter(raptor, SIZE != 'NA')
+
+# Creating a new data table for small size of raptor
+smsize <- filter(size, SIZE == 'small')
+
+# Creating a new data table for large size of raptor
+lgsize <- filter(size, SIZE == 'large')
+```
+
+```{r}
+# For small raptor size
+# Estimating the binomial formula using smsize dataframe
+# number of trials n 
+nsmall <- length(smsize$SIZE)
+
+# number of successes X (alarms)
+Xsmall <-sum(smsize$Alarm_Call)
+
+# observed proportion of successes in sample population p_hat
+p_hatsmall <- Xsmall/nsmall
+```
+
+```{r}
+# For small raptor size
+# all possible values of X out of n trials
+X_success_small <- 0:nsmall
+# X_success_small 
+
+# binomial probabilities
+prob_Xsmall <- dbinom(X_success_small, nsmall, p_hatsmall)
+# prob_Xsmall
+```
+
+```{r}
+# For small raptor size
+# generating a dataframe with X_success_small and binomial probabilities for the plot
+probTable1 <- data.frame(X_success_small, prob_Xsmall)
+# probTable1
+
+# binomial probability distribution plot
+p2 <- ggplot(probTable1,aes(x=X_success_small,y=prob_Xsmall)) +
+  geom_bar(stat = "identity") +
+  ylab("Probability") +
+  xlab("Number of alarm calls with small raptors") +
+  theme_classic(20)
+p2
+```
+
+```{r}
+# standard error of p as in probability
+SE_small <- sqrt((p_hatsmall*(1-p_hatsmall))/nsmall)
+SE_small
+```
+
+```{r}
+# binomial test
+binom.test(Xsmall, nsmall, p_null)
+```
+
+
+```{r}
+# For large raptor size
+# Estimating the binomial formula using lgsize dataframe
+# number of trials n 
+nlarge <- length(lgsize$SIZE)
+
+# number of successes X (alarms)
+Xlarge <-sum(lgsize$Alarm_Call)
+
+# observed proportion of successes in sample population p_hat
+p_hatlarge <- Xlarge/nlarge
+```
+
+```{r}
+# For large raptor size
+# all possible values of X out of n trials
+X_success_large <- 0:nlarge
+# X_success_large 
+
+# binomial probabilities
+prob_Xlarge <- dbinom(X_success_large, nlarge, p_hatlarge)
+# prob_Xlarge
+```
+
+```{r}
+# For large raptor size
+# generating a dataframe with X_success_large and binomial probabilities for the plot
+probTable2 <- data.frame(X_success_large, prob_Xlarge)
+# probTable2
+
+# binomial probability distribution plot
+p3 <- ggplot(probTable2,aes(x=X_success_large,y=prob_Xlarge)) +
+  geom_bar(stat = "identity") +
+  ylab("Probability") +
+  xlab("Number of alarm calls with large raptors") +
+  theme_classic(20)
+p3
+```
+
+```{r}
+# standard error of p as in probability
+SE_large <- sqrt((p_hatlarge*(1-p_hatlarge))/nlarge)
+SE_large
+```
+
+```{r}
+# binomial test
+binom.test(Xlarge, nlarge, p_null)
+```
+
+### Discussion Question Answers
+a. Successes and failures in binomial trials represent the answer to a yes or no question posed by the researchers.
+b. H0: Raptor size is not a visual cue driving the proportion of sentinel birds producing alarm calls. The estimated p-value for the binomial test of small raptors driving the proportion of alarm calls among sentinel birds was <2.2x10^-16. Additionally, the estimated p-value for the binomial test of large raptors driving the proportion of alarm calls among sentinel birds was 6.66x10^-14. Given the statistical significance of both binomial tests, raptor size does not drive the proportion of alarm calls in sentinel birds.
+c. For the small raptors, the standard error (precision) of the distribution of alarm calls among sentinel birds was 0.046 alarm calls. For the large raptors, the standard error (precision) of the distribution of alarm calls among sentinel birds was 0.0368 alarm calls.
+

@@ -6,6 +6,8 @@ output:
   pdf_document: default
   html_document: default
 ---
+### Research Question 1: Does the presence of L. latifolium affect the abundance of soil invertebrates?
+
 ### Section 1 - Importing Data
 
 ```{r, setup}
@@ -16,269 +18,148 @@ library(tidyverse)
 
 ```{r}
 # Importing data
-cayo <- read.csv("cayo.csv",header=TRUE)
+marsh <- read.csv("marsh.csv",header=TRUE)
 
 # viewing the structure of the data
-str(cayo)
-head(cayo)
+str(marsh)
+head(marsh)
 ```
 
 ### Question Answers
-a. The 'cayo' dataset has 1480 observations of 8 variables.
-b. Given the question 'Does age at death vary across age in females?', we are interested in the 'sex' and 'age_at_death' variables.
+a. The 'marsh' dataset has 119 observations of 9 variables.
+b. Given the question 'Does the presence of L. latifolium affect the abundance of soil invertebrates?', we are interested in the 'plant' and 'n' variables.
+c. Considering the experiment and research question, the treatment is 'plant' species/type.
 
-### Section 2 - Infering Population Parameters from Random Samples
+### Section 2 - Stating the Null and Alternative Hypothesis
+
+### Challenge 1
+
+H0: The presence of L. latifolium does not affect the abundance of soil invertebrates in a wetland ecosystem
+
+HA: The presence of L. latifolium does affect the abundance of soil invertebrates in a wetland ecosystem.
 
 ```{r}
-# plotting counts, the function floor() rounds variable to the smallest whole number
-p1 <- ggplot(cayo,aes(x=floor(age_at_death))) +
-  geom_histogram(binwidth = 1) +
-  xlab("Age at death (years)") +
-  ylab("Frequency")
+# visualizing the variables of interest
+# filtering by invertebrate type
+soil <- filter(marsh,invertebrate=="soil")
+
+# boxplot for abundance across treatment
+p1 <- ggplot(soil,aes(x=plant,y=n)) +
+  geom_boxplot()
 p1
+```
 
-# plotting proportions, ..count.. tallies the number of observations per unit (bin) on the x-axis from left to right.
-p2 <- ggplot(cayo,aes(x=floor(age_at_death))) +
-   geom_histogram(aes(y=..count../sum(..count..)),binwidth = 1) +
-   xlab("Age at death (years)") +
-   ylab("Frequency")
+### Question Answer
+a. From the boxplots, which exhibit very similar distributions among treatments, it appears as though plant type/species does not have an effect on soil invertebrate abundance.
+
+```{r}
+# Digging deeper and investigating other potential features of L. latifolium that could be contributing to the observed data
+# boxplot for abundance across L. latifolium stages
+p2 <- ggplot(soil,aes(x=stage_lep,y=n)) +
+  geom_boxplot()
 p2
-```
 
-```{r}
-# Estimating mean and sd population parameters for age at death
-# mean age at death
-mu <- mean(cayo$age_at_death)
-mu
-
-# standard deviation of age at death
-sigma <- sd(cayo$age_at_death)
-sigma
-```
-
-### Question Answers
-a. Age 0 (or newborn) monkeys experience a higher probability of deaths.
-b. mu = 4.69 years of age is the population mean age of death for the monkeys. sigma = 6.18 years of age is the standard deviation, a measure of the precision of the mean age of death for the monkeys.
-
-```{r}
-# checking the levels in the variable sex
-levels(as.factor(cayo$sex))
-```
-
-### Question Answers
-a. The 'sex' categories are 'f' for female, 'm' for male, and 'u' for unknown.
-b. Given that there are unknown categories of 'sex', we can only estimate a sampling distribution of sample means (average measure) and sample standard deviations (spread measure) for statistics involving the sexes.
-
-```{r}
-# Estimating the mean age at death and its sd for females
-# filtering by females
-fem <- filter(cayo,sex=="f")
-str(fem)
-
-# mean age at death of females
-m_fem <- mean(fem$age_at_death)
-m_fem
-
-# standard deviation for females
-s_fem <- sd(fem$age_at_death)
-s_fem
-```
-
-### Challenge 1: Plot the Distribution of Age at Death for Females.
-
-```{r}
-# plotting counts
-p3 <- ggplot(fem,aes(x=floor(age_at_death))) +
-  geom_histogram(binwidth = 1) +
-  xlab("Age at death (years)") +
-  ylab("Frequency")
+# removing NAs from the ggplot 
+p3 <- ggplot(drop_na(soil),aes(x=stage_lep,y=n)) +
+  geom_boxplot()
 p3
 ```
 
 ### Question Answers
-a. Females in the age classes of 0 and 1 experience more deaths.
-b. The pattern of age at death for females does not differ much at all from the entire population distribution.
-
-### Section 3 - Estimating the Sampling Distribution
+a. In contrast to the previous boxplots, these are more numerous and do not all demonstrate similar distributions or overlapping median values.
+b. Biologically, this could mean that life history stage of L. latifolium dictates the abundance of soil invertebrates. Statistically, this could mean that there is an effect of life history stage of L. latifolium on soil invertebrate abundance.
 
 ```{r}
-# sample() allows to randomly sample a dataframe
-# creating a new object to add the 10,000 sample statistics
-r500 <- NULL 
-
-# loop for sampling 500 females at random and estimate the mean age at death
-for(i in 1:10000){
-  temporarySample <- sample(floor(fem$age_at_death), size = 500,
-                                   replace = FALSE)
-  r500[i] <- mean(temporarySample)
-}
-
-r500 <- as.data.frame(r500)
-
-# viewing the new data frame created
-#View(r500)
-
-# plotting the sampling distribution
-p4 <- ggplot(r500,aes(x=r500)) +
-  geom_histogram(aes(y=..count../sum(..count..)),binwidth = .1) +
-  xlab("Female age at death (years)") +
-  ylab("Probability")
+# plotting all variables together
+p4 <- ggplot(soil,aes(x=plant,y=n,fill=stage_lep)) +
+  geom_boxplot()
 p4
 ```
 
-### Question Answers
-a. The above sampling distribution is centered around the previous sample mean of 5.64 years of age at death for females.
-b. The standard deviation value of 6.80 years of age at death for females in the previous sample serves as a proxy for the width of the normal distribution of 10000 means.
-c. If we were to re-run the exercise with a sample of 50 females, the sample mean might be similar, but the sample standard deviation will increase.
-
-### Section 4 - Estimating the Standard Error
+### Section 3 - Estimating the Test Statistic and its Precision
 
 ```{r}
-# standard error of the mean
-se_fem <- s_fem/sqrt(737)
-se_fem
+# Estimate the mean soil invertebrate abundance per plot per treatment
+# filtering data by invertebrate type and treatment
+s_lep <- filter(marsh,
+               invertebrate=="soil" & plant=="Lep")
+
+# mean abundance per plot
+m_s_lep <- mean(s_lep$n)
+
+m_s_lep
+
+# standard error
+se_s_lep <- sd(s_lep$n)/sqrt(36)
+
+se_s_lep
 ```
 
 ### Question Answer
-a. With a Standard Error (SE) of 0.25 years, the sample mean for female monkeys is relatively precise.
+a. The test statistic is a mean of about 31 soil invertebrates per plot with a precision of about 6 invertebrates (mean = 30.61, n=36, SEM = 5.97).
 
-### Section 5 - Plotting the Probability Distribution of the Mean Age at Death
-
-```{r}
-# probability density distribution for females
-#geom_density() creates a smooth version of a histogram via kernel interpolation
-p5 <- ggplot(fem,aes(age_at_death)) +
-  geom_density() +
-  xlab("Female age at death (years)") +
-  ylab("Probability density")
-p5
-
-```
-
-### Question Answer
-a. There is a pattern of much greater probabilities of death in the early years of female monkey lives, particularly just after birth. This makes sense biologically since newborn primates are very fragile and require a lot of care.
-
-### Section 6 - Estimating the Probability of Two or More (Survival) Events
+### Section 4 - Estimating the Null Distribution and the p-value
 
 ```{r}
-# Dying and surviving in a particular age are two mutually exclusive events; we either die or survive. Thus, if we know the probability of dying at a particular age, we can define the probability of not dying (i.e., surviving) at such age. Let’s estimate the probability of surviving for the most vulnerable ages; from birth to 2 years of age.
-# frequency table of age at death of females
-table(floor(fem$age_at_death))
+# creating a dataframe to calculate p-value based on figure 3 in lab manual
+Nat_df <- data.frame(MeanSoilInvert=c(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49), 
+                     p=c(0.0001, 0.0007, 0.0008, 0.0014, 0.0056, 0.0098, 0.0162, 0.0265, 0.0375, 0.0444, 0.0537, 0.0634, 0.0723, 0.0757, 0.0764, 0.0756, 0.0739, 0.0693, 0.0563, 0.0452, 0.0453, 0.0356, 0.0274, 0.0236, 0.0193, 0.0120, 0.0095, 0.0053, 0.0053, 0.0035, 0.0022, 0.0021, 0.0016, 0.0009, 0.0006, 0.0005, 0.0001, 0.0002, 0.0002))
+#sum(Nat_df$p)
 
-# proportion of deaths during the first year of life
-m0 <- 249/737
-m0
+#filter out values equal to or more extreme than the test statistic of 30.6, rounded up to 31
+Nat_df0 <- filter(Nat_df, MeanSoilInvert >= 31)
 
-# survival during the first year of life
-s0 <- 1-m0
-s0
+# because of two tail distribution with a center at 25
+Nat_df1 <- filter(Nat_df, MeanSoilInvert <= 19)
+ 
+#combine dataframes with rbind()                 
+Nat_df01 <- rbind(Nat_df0, Nat_df1)
 
-# proportion of deaths during the second year of life
-m1 <- 120/(737-249)
-m1
-
-# survival during the second year of life
-s1 <- 1-m1
-s1
-
-# probability of surviving from birth to 2 years of age 
-s0*s1
+#calculate p-value from sums of probabilities
+pvalue1 <- sum(Nat_df01$p)
+pvalue1
 ```
 
 ### Question Answers
-a. Because I wanted to know the probability of surviving past the first two age classes, the probabilities of surviving past each stage must be multiplied.
-b. The probability that a female monkey will survive to age 2 is 0.499.
+a. The p-value is 0.294.
+b. Given the p-value of 0.294 and our cutoff of p=<0.05, there is insufficient evidence to reject the null hypothesis because the probability of observing a mean soil invertebrate abundance of 31 individuals is relatively high under the null hypothesis of no affect of plant type on soil invertebrate abundance.
 
-### Stop, Think, Do - Answer the Following Research Question: Do hurricanes affect survival from birth to 2 years of age?
+### Research Question 2: Does the presence of L. latifolium in the rosette stage affect the abundance of soil invertebrates?
+
+### Stop, Think, Do: Test the null hypothesis against the alternative hypothesis that the presence of L. latifolium in rosette stage (circular arrangement of leaves before flowering) affects the abundance of soil invertebrates.
 
 ```{r}
-# Hurricane year dataframe for females
-# filtering previously created fem dataframe by hurricane year
-hurri <- filter(fem, treatment=="hurricane")
-str(hurri)
+#filter to create a data frame with the data needed
+rosette <- filter(soil, stage_lep == "rosette")
 
-# mean age at death of females
-m_hurri <- mean(hurri$age_at_death)
-m_hurri
+# calculate mean invertebrate abundance per plot
+m_rosette <- mean(rosette$n)
+m_rosette
 
-# standard deviation for females
-s_hurri <- sd(hurri$age_at_death)
-s_hurri
+sem_rosette <- sd(rosette$n)/sqrt(9)
+sem_rosette
 ```
 
 ```{r}
-# frequency table of age at death of females during hurricanes
-table(floor(hurri$age_at_death))
+#filter out values equal to or more extreme than the test statistic of 10.5, rounded up to 11
+Nat_df2 <- filter(Nat_df, MeanSoilInvert <= 11)
+
+# because of two tail distribution with a center at 25
+Nat_df3 <- filter(Nat_df, MeanSoilInvert >= 49)
+                  
+Nat_df23 <- rbind(Nat_df2, Nat_df3)
+
+#calculate p-value from sums of probabilities
+pvalue2 <- sum(Nat_df23$p)
+pvalue2
 ```
 
-```{r}
-# Hurricane proportions
-# proportion of deaths during the first year of life
-m0_hurri <- 16/52
-m0_hurri
-
-# survival during the first year of life
-s0_hurri <- 1-m0_hurri
-s0_hurri
-
-# proportion of deaths during the second year of life
-m1_hurri <- 10/(52-16)
-m1_hurri
-
-# survival during the second year of life
-s1_hurri <- 1-m1_hurri
-s1_hurri
-
-# probability of surviving from birth to 2 years of age 
-s0_hurri*s1_hurri
-```
-
-```{r}
-# Normal or control year dataframe for females
-# filtering previously created fem dataframe by normal or control year
-ctrl <- filter(fem, treatment=="control")
-str(ctrl)
-
-# mean age at death of females
-m_ctrl <- mean(ctrl$age_at_death)
-m_ctrl
-
-# standard deviation for females
-s_ctrl <- sd(ctrl$age_at_death)
-s_ctrl
-```
-
-```{r}
-# frequency table of age at death of females during normal years
-table(floor(ctrl$age_at_death))
-```
-
-```{r}
-# Hurricane proportions
-# proportion of deaths during the first year of life
-m0_ctrl <- 233/685
-m0_ctrl
-
-# survival during the first year of life
-s0_ctrl <- 1-m0_ctrl
-s0_ctrl
-
-# proportion of deaths during the second year of life
-m1_ctrl <- 110/(685-233)
-m1_ctrl
-
-# survival during the second year of life
-s1_ctrl <- 1-m1_ctrl
-s1_ctrl
-
-# probability of surviving from birth to 2 years of age 
-s0_ctrl*s1_ctrl
-```
-
-The above analysis demonstrates that the probability of female survival to two years of age does not differ between hurricane years (0.500) and normal years (0.499).
+### Question Answers
+a. The p-value is 0.0003.
+b. Given the p-value of 0.0003 and our cutoff of p=<0.05, there is sufficient evidence to reject the null hypothesis because the probability of observing a mean soil invertebrate abundance of 11 individuals is extremely low under the null hypothesis of no effect of plant type/life stage on soil invertebrate abundance.
 
 ### Discussion Question Answers
-a. A population distribution would be the standard length measurements of all California halibut in San Francisco Bay on the first day of May, 2025. A sampling distribution would be the frequency of means of multiple random samples of 100 captured and measured California Halibut in San Francisco Bay.
-b. The measure of precision in the previous lab (Chapter 2) involved taking the range of measured values for a sample size of three observations. The measure of precision in this lab involved calculating the standard error of the mean for a sample size of 737 observations.
-c. To apply the multiplication rule in our survival exercise, we must assume that death and survival in different age classes are mutually exclusive events.
+a. The null hypothesis is a claim that implies that there is no effect, association, or difference between treatments in a study. The alternative hypothesis is a statement that implies an effect, association, or difference between treatments in a study.
+b. We need a null distribution to test our hypotheses so that we can compare the test statistic to an array of possible outcomes from our study to ultimately determine the probability of observing the test statistic.
+c. The p-value is a number that represents the probability of observing the value of a test statistic or something more extreme. These p-values are extremely important in hypothesis testing because they determine if we are able to reject or fail to reject the null hypothesis based on our accepted p-value cutoff.
 
