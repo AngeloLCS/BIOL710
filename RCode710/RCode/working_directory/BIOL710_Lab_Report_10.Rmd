@@ -1,0 +1,126 @@
+---
+title: "Chapter 10 Two-way Analysis of Variance"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### Size-dependent Temperature Constraints in Fiddler Crabs
+
+### Research Question 1: Does body size interact with hydration state to influence the thermal preferences of fiddler crabs?
+
+
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+#commands header=TRUE in order to treat the first row of the data frame as a header and stringsAsFactors=TRUE to indicate that strings in the data frame should be treated as factor variables
+crab <- read.csv("crab.csv",header=TRUE,stringsAsFactors = TRUE)
+str(crab)
+head(crab)
+```
+
+### Question Answers 
+a. The dataset "crab.csv" contains 80 total observations of 3 different variables.
+b. Given the question 'Does body size interact with hydration state to influence the thermal preferences of fiddler crabs?', we are interested in all three of the variables: 'sand', 'size', 'tb'.
+c. I will compare two factor variables ('sand' and 'size'), each with two factor levels, to each other in regards to their effects on the numerical variable body temperature ('tb').
+
+### Section 2 - Checking Model Assumptions of Equal Variances
+
+```{r}
+# equal variances test between tb and size
+bartlett.test(tb~size, data=crab)
+
+# equal variances test between tb and sand
+bartlett.test(tb~sand, data=crab)
+
+# If the test results in a p-value > 0.05, then the data has equal variance (no difference in variance across factors) 
+```
+
+### Section 3 - Carrying Out a Two-way Analysis of Variance
+
+```{r}
+# ANOVA
+crab_aov <- aov(tb ~ sand + size + sand*size, data=crab)
+crab_aov
+# This is the long, written-out version of the same model below, small differences are due to rounding
+
+crab_aov1 <- aov(tb ~ sand*size, data=crab)
+crab_aov1
+
+# ANOVA table
+summary(crab_aov)
+summary(crab_aov1)
+```
+
+### Challenge: Plot the Data.
+
+```{r}
+# creating a boxplot with means
+p1 <- ggplot(crab,aes(x=sand,y=tb, fill=size)) +
+  geom_boxplot() +
+  stat_summary(fun=mean, geom = 'point', shape = 8, size = 2)+
+  ylab("Body Temperature (°C)") +
+  xlab("Sand Humidity Treatment") +
+  theme_classic()
+p1
+```
+
+### Section 4 - Plotting the Interaction
+
+```{r}
+# Interaction plot
+p2 <- ggplot(crab,aes(sand,tb,group=size,color=size)) +
+  geom_point(size=2,alpha=.5,position = position_dodge(width=.15)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  ylab("Body temperature (°C)") +
+  xlab("Sand treatment") +
+  theme_classic(14)
+p2
+```
+
+### Section 5 - Carrying Out a Multiple Comparision Using the Tukey Test
+
+```{r}
+# Tukey test
+t <- TukeyHSD(crab_aov)
+t
+```
+
+### Question Answers
+a. All group means are significantly different, except for between all small and large crab body temperature readings in this study (p-value: 0.109) because the mean body temperature difference between small and large crabs under wet sand conditions is not significantly different (p-value: 0.959).
+b. Overall, fiddler crabs exposed to dry sand conditions exhibited a much lower mean body temperature than those exposed to wet sand conditions. Crab size was not associated with body temperature differences in wet sand conditions, but it was a factor in dry sand conditions, with larger crabs demonstrating higher body temperatures than their smaller counterparts. This could be due to larger crabs having lower surface area to volume ratios that allows them to more efficiently retain their body temperature.
+
+### Section 6 - Checking Model Assumptions of Normality
+
+### Challenge: Test the model assumptions of normality.
+
+```{r}
+# The aov() function (done originally in the 4th chunk) prepares the data for model checking plots: a plot of residuals vs fitted values, a Q-Q plot, a scale-location plot, and a constant-leverage plot.
+# model checking plots
+plot(crab_aov)
+```
+
+```{r}
+# Another way we can test for normality in our data is by employing a Shapiro test. In this test, the null hypothesis states that our model residuals comes from a normal distribution. For this, we can use shapiro.test()
+crab_aov_res <- residuals(crab_aov)
+
+shapiro.test(crab_aov_res)
+```
+
+### Question Answers
+a. The assumptions of a two-way ANOVA are 1) independence of observations, 2) normality within groups, and 3) and homoscedasticity (variance equality between groups).
+b. According to the QQ residuals plot and the Shapiro-Wilk normality test, my model does not follow the assumptions for an ANOVA.
+
+### Discussion Question Answers
+a. A one-way ANOVA tests the influence of three or more groups within a single independent variable on a continuous numerical variable. A two-way ANOVA tests the influence of multiple groups within two independent variables and their interaction on a continuous numerical variable.
+b. In the linear formula for the two-way ANOVA, we multiply the two factors to examine the interaction between them on body temperature in fiddler crabs.
+c. The model output demonstrates three different p-values because it is testing for the effect of sand humidity and crab size separately, as well as their interaction on the body temperature of fiddler crabs.
+

@@ -32,11 +32,122 @@ library(tidyverse)
 ```
 
 ```{r}
-vector <- rnorm(100, mean = 1.5, sd = 0.7)
-vector
+#vector <- rnorm(100, mean = 1.5, sd = 0.7)
+#vector
 
-runif()
+ctrl_gamm <- sample(0:5, 27, replace = TRUE)
+ctrl_capr <- sample(0:10, 27, replace = TRUE)
+ctrl_pent <- sample(0:3, 27, replace = TRUE)
+
+ctrl_gamm <- as.matrix(ctrl_gamm)
+ctrl_capr <- as.matrix(ctrl_capr)
+ctrl_pent <- as.matrix(ctrl_pent)
+
 ```
+
+```{r}
+tank <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "Ñ", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
+
+tank_rand1 <- sample(tank, 27)
+tank_rand1
+tank_rand2 <- sample(tank, 27)
+tank_rand3 <- sample(tank, 27)
+tank_rand4 <- sample(tank, 27)
+tank_rand5 <- sample(tank, 27)
+tank_rand6 <- sample(tank, 27)
+tank_rand7 <- sample(tank, 27)
+tank_rand8 <- sample(tank, 27)
+tank_rand9 <- sample(tank, 27)
+
+tank_rand <- rbind(tank_rand1, tank_rand2, tank_rand3, tank_rand4, tank_rand5, tank_rand6, tank_rand7, tank_rand8, tank_rand9)
+tank_rand
+tank_rand <- as.matrix(c(apply(tank_rand, 1, c)))
+#for (i in tank) {
+#  print(sample(tank, 27))
+#}
+```
+
+
+```{r}
+gamm <- sample(1:50, 243, replace = TRUE)
+capr <- sample(1:50, 243, replace = TRUE)
+pent <- sample(0:10, 243, replace = TRUE)
+
+gamm <- as.matrix(gamm)
+capr <- as.matrix(capr)
+pent <- as.matrix(pent)
+```
+
+```{r}
+sp_cym <- runif(n=230, min=3.5, max=10)
+sp_lept <- runif(n=27, min=3.7, max=11.4)
+sp_hyps <- runif(n=27, min=3.3, max=9.3)
+sp_pho <- runif(n=27, min=1.4, max=5.9)
+
+sp_cym <- as.matrix(sp_cym)
+sp_lept <- as.matrix(sp_lept)
+sp_hyps <- as.matrix(sp_hyps)
+sp_pho <- as.matrix(sp_pho)
+
+```
+
+```{r}
+rec.list <- function(len){
+  if(length(len) == 1){
+    vector("list", len)
+  } else {
+    lapply(1:len[1], function(...) rec.list(len[-1]))
+  }
+}
+```
+
+```{r}
+set.seed(5094)
+
+season <- c('spring', 'summer', 'fall')
+tank <- c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "Ñ", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z")
+treatment <- c("control", "control","control","C_aggregata", "C_aggregata","C_aggregata","2C_aggregata", "2C_aggregata","2C_aggregata","L_armatus", "L_armatus","L_armatus", "2L_armatus","2L_armatus","2L_armatus", "H_guttulata", "H_guttulata","H_guttulata","2H_guttulata","2H_guttulata","2H_guttulata", "P_ornata","P_ornata","P_ornata", "2P_ornata", "2P_ornata", "2P_ornata")
+
+Data_full <- rec.list(c(length(season), 3, length(tank)))
+
+for (x in 1:length(season)) {
+  for (u in 1:3){#day
+    for (t in 1:length(tank)){
+    
+ pent_loss <- sample(1:10, 1, replace=TRUE)
+ gamm_loss <- sample(1:50, 1, replace=TRUE)
+ capr_loss <- sample(1:50, 1, replace=TRUE)
+ treat <- sample(treatment, 1, replace=FALSE)
+ # fish1_mass<-
+ #   if (treat == 'control'){
+ #   NA
+ #   } else if (season == 'spring' & treat == 'C_aggregata' ){
+ #     runif(n=1, min=3.5, max=10)
+ #   } else {
+ #     10
+ #   }
+ 
+ Data_full[[x]][[u]][[t]] <- data_frame(
+                              'pent_loss'=pent_loss,
+                              'gamm_loss'=gamm_loss,
+                              'capr_loss'= capr_loss, 
+                              'treatment' = treat)#,
+                              # 'fish1_mass' = fish1_mass)
+      } #tank
+    names(Data_full[[x]][[u]]) <- tank
+    } #day
+  } #season
+names(Data_full) <- season
+
+
+
+Test <- unlist(Data_full)
+
+Test2 <- data.frame(Reduce(rbind, Data_full))
+
+Test3 <- ldply(Data_full, data_frame())
+```
+
 
 ### References:
 Ayala, G. S. 2021. Eelgrass (Zostera marina) invertebrate community recovery following an extreme low salinity event. Master’s thesis. San Francisco State University, San Francisco, CA. 

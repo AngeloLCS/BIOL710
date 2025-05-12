@@ -1,0 +1,183 @@
+---
+title: "Chapter 13 Population Genetics"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### Genetic Diversity and Population Structure in Woodrats
+
+### Research Question 1:  Does genetic differentiation increase with geographic distance among dusky-footed woodrat populations?
+
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+library(adegenet)
+library(hierfstat)
+library(vegan)
+library(vcfR)
+```
+
+```{r}
+# Load metadata (locations, coordinates)
+neo_fus_loc <- read.csv("Neo_fus.csv")
+
+# Load SNP genotype data from VCF file
+neo_fus_gen <- read.vcfR("Neo_fus.vcf")
+```
+
+### Section 2 - Creating a Genind Object
+
+```{r}
+# Convert VCF data to a genind object
+genind_obj <- vcfR2genind(neo_fus_gen)
+
+# View summary of the genetic data
+#summary(genind_obj))
+
+#converst to a dataframe for easier interpretation
+test<-genind2df(genind_obj)
+#View(test)
+```
+
+### Question Answers
+a. There are 68 woodrat individuals in the genotype dataset. 
+b. The dataset includes information such as number of alleles per locus, observed heterozygosity, and expected heterozygosity.
+
+### Section 3 - Calculating Hetegozygosity
+
+```{r}
+# Summarize the genind object to get basic statistics
+genind_summary <- summary(genind_obj)
+
+# Extract observed and expected heterozygosity per SNP locus
+observed_het <- genind_summary$Hobs
+expected_het <- genind_summary$Hexp
+
+# Combine into a tidy table
+het_df <- tibble(
+  Locus = names(observed_het),
+  Hobs = observed_het,
+  Hexp = expected_het
+)
+
+# View first few rows
+head(het_df)
+```
+
+### Section 4 - Plotting Observed and Expected Heterozygosity
+
+```{r}
+# Plot observed vs expected heterozygosity
+ggplot(het_df, aes(x = Hexp, y = Hobs)) +
+  geom_point(color = "gray60") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Expected Heterozygosity", 
+       y = "Observed Heterozygosity",
+       title = "Observed vs Expected Heterozygosity")
+```
+
+### Question Answers
+a. Most loci have an observed heterozygosity less than the expected heterozygosity, given by the location of a majority of points below the guiding red-colored line that shows complete congruence between expected heterozygosity and observed heterozygosity
+b. Loci can deviate from the Hardy-Weinberg expectations if there is random genetic drift or selection for a trait that is associated with homozygosity within a population.
+
+### Section 5 - Calculating Fst Among Populations
+
+```{r}
+# Assign populations based on metadata
+pop(genind_obj) <- as.factor(neo_fus_loc$location)
+
+# Convert genind object to hierfstat format
+hf_data <- genind2hierfstat(genind_obj)
+
+# Calculate basic statistics, including per-locus Fst values
+basic_stats <- basic.stats(hf_data)
+
+# View per-locus values, including Fst
+basic_stats_perloc <- basic_stats$perloc
+
+# Turn locus IDs (rownames) into a column
+basic_stats_perloc$locusID <- rownames(basic_stats_perloc)
+
+#View product
+summary(basic_stats_perloc)
+```
+
+### Question Answers
+a. Loci 119007_83 and 30398_11 show the highest Fst values with values greater than 0.3. These high values suggest that there is large genetic differentiation at these loci among north and south woodrat populations.
+b. There are some negative Fst values for certain loci, which are difficult to interpret, but also a good amount of positive Fst values for loci that are near zero. These low Fst values suggest that there is no significant difference in the in genetic composition at these loci among north and south woodrat populations. These loci could be highly biologically conserved or under similar selection pressures and thus exhibit congruence.
+
+### Challenge 1: Create a plot that shows Fst values for each SNP. Hint: use ggplot2::geom_col().
+
+```{r}
+f1<-ggplot(basic_stats_perloc, aes(x = locusID, y = Fst)) +
+  geom_col() +
+  labs(
+    x = "Locus ID",
+    y = "Fst") +
+  theme_minimal()
+f1
+```
+
+### Section 6 - Spatial Patterns of Genetic Structure
+
+```{r}
+# Calculate pairwise geographic distances
+dist_geo <- neo_fus_loc %>%
+  select(longitude, latitude) %>%
+  dist()
+
+# Calculate pairwise genetic distances between individuals
+dist_gen <- dist(genind_obj)
+
+
+# create a tibble to combine vector-like dist data structures
+GenGeoTable <- tibble(Genetic= dist_gen, Geographic= dist_geo)
+
+```
+
+### Challenge 2: Create a plot comparing genetic and geographic distance Add a regression line to your scatterplot to help visualize the trend. Hint: use ggplot2::geom_smooth(method = "lm").
+
+```{r}
+ggplot(GenGeoTable, aes(x=Geographic, y=Genetic)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  labs(
+   x = "Geographic Distance",
+   y = "Genetic Distance") +
+  theme_minimal()
+```
+
+### Stop, Think, and Think:
+If there were genetic isolation by geographic distance the relationship between the geographic distance and genetic isolation would be strongly positively correlated and residuals would be minimal and data concentrated more or less along the line of best fit.
+
+### Question Answers
+a. The above plot suggests a slight positive relationship between geographic distance and genetic distance.
+b. A speciation event resulting from habitat fragmentation could create a pattern where genetic distance increases with geographic distance.
+
+### Challenge 3: What kind of statistical methods could you use to formally test whether genetic distance increases with geographic distance? Justify the best method and statistically test the relationship.
+
+The Mantel test formally compares two distance matrices to test whether they are correlated. In our case, one matrix represents genetic distances between individuals and the other represents geographic distances. A significant p-value suggests that individuals farther apart geographically are also more genetically different; a pattern expected under Isolation by Distance.
+
+```{r}
+# Perform Mantel test between genetic and geographic distances
+mantel_result <- mantel(dist_gen, dist_geo)
+
+# View the result
+mantel_result
+```
+
+With a Mantel correlation coefficient of 0.162 and a significance level of 0.003, there appears to be a statistically significant correlation between the geographic distance of the sample woodrat population and their genetic distance.
+
+### Discussion Question Answers
+a. Heterozygosity is a measure of the proportion of individuals within a population that have two different alleles for a given locus. Observed heterozygosity is calculated as a proportion of the individuals in a population that are known to be heterozygous. Expected heterozygosity under Hardy-Weinberg equilibrium is calculated from genotype data by doubling the product of individual allele frequencies.
+b. According to basic_stats, the overall Fst output for the comparison between north and south woodrat population genetics was 0.1148. This number under the context of a single locus with a similar individual Fst (basic_stats[["pop.freq"]][[129]]) corresponding to allele frequency differences of 0.3382, suggests that, on average, the north and south populations are genetically different from one another.
+c. Fst quantifies the magnitude of genetic differences between groups using allele proportions, with larger Fst values indicating greater genetic dissimilarity between groups.
+d. When using a Mantel test, a significant p-value means that there is a potential association between the two distances (in our case genetic and geographic).
+

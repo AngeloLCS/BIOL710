@@ -1,0 +1,233 @@
+---
+title: "Chapter 14 Phylogenetics"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### Evolutionary Divergence in *Leptasterias* with Sequence Data
+
+### Research Question 1: Does sequence data show evidence of divergence within *Leptasterias*, and are divergence patterns consistent with geographic structure?
+
+### Section 1 - Load and Align Sequences
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+library(Biostrings)
+library(msa)
+library(phangorn)
+library(ggtree)
+library(ape)
+library(maps)
+library(ggspatial)
+library(tidytree)
+```
+
+```{r}
+# Load sequences
+dna <- readDNAStringSet("coi_nucleotide.fasta")
+
+# Align sequences
+dna_aln <- msa(dna, method = "ClustalW")
+```
+
+### Question Answers
+a. There are 57 COI DNA sequences are in the dataset.
+b. The metadata includes information about the locations from which each sea star was sampled and whether that sample is historical or contemporary.
+c. The process of genetic sequence alignment assumes that the sequences from two different individual organisms are evolutionarily and/or functionally similar.
+d. Some sequences are more challenging to align if they exhibit large mutations, such as multi nucleotide deletions or insertions. This can create many different scenarios involving which nucleotides best align with each other.
+
+### Section 2 - Building and Comparing Trees
+
+```{r}
+# Convert aligned sequences to phyDat format
+dna_phy <- as.phyDat(msaConvert(dna_aln, type = "seqinr"), type = "DNA")
+
+# View structure in the console
+dna_phy
+```
+
+```{r}
+#Estimate pairwise distances and construct a starting tree using neighbor joining
+# Create initial tree
+tree_dna <- NJ(dist.ml(dna_phy))
+```
+
+We then apply a model of sequence evolution to calculate the maximum likelihood tree. This model accounts for how different types of nucleotide substitutions occur over time. For DNA data, we use the GTR model (General Time Reversible), a widely used and flexible model that allows different substitution rates for each pair of nucleotides. This helps improve the accuracy of tree estimation, especially when sequences have evolved under complex patterns of change.
+
+```{r}
+# Maximum likelihood optimization
+fit_dna <- optim.pml(pml(tree_dna, data = dna_phy), model = "GTR")
+```
+
+```{r}
+# Visualize tree
+ggtree(fit_dna$tree) + 
+geom_tiplab() + 
+ggtitle("Maximum likelihood tree (DNA)")
+```
+
+### Section 3 - Adding Bootstrap Support
+
+```{r}
+# # Add bootstrap values to tree object
+# bs_dna <- bootstrap.pml(fit_dna, bs = 100, optNni = TRUE)
+# tree_bs <- plotBS(fit_dna$tree, bs_dna, type = "none")
+# 
+# # Visualize in ggtree
+# ggtree(tree_bs) +
+#   geom_tiplab() +
+#   geom_text2(aes(label = label), hjust = -0.3) +
+#   ggtitle("ML tree with bootstrap support (DNA)")
+```
+### Question Answers
+a. The resulting phylogeny seems very convoluted. The lack of discernible tips and tip labels makes it difficult to interpret. There are several paraphyletic groups, indicating either high uncertainty in genetic relatedness between individuals or near complete genetic similarity among individuals at the tips.
+
+### Section 4 - Rooting the Tree Using an Outgroup
+
+```{r}
+# View tip labels and identify L. hexactis samples
+fit_dna$tree$tip.label
+
+# Re-root the tree on the most recent common ancestor of hexactis tips
+rooted_dna <- root(fit_dna$tree, outgroup = "L. hexactis AF162095", resolve.root = TRUE)
+
+# Plot the rooted tree
+ggtree(rooted_dna) +
+  geom_tiplab() +
+  ggtitle("Rooted tree using L. hexactis")
+```
+
+### Section 5 - Labeling Clades and Visualizing Structure
+
+Once your tree is rooted, the next step is to explore its structure and annotate according to your research question. Each internal node in the tree represents a hypothetical common ancestor. To label clades, you must first identify internal nodes of interest and determine which tips descend from them.
+
+Start by displaying node numbers on your tree:
+
+```{r}
+ggtree(rooted_dna) +
+  geom_tiplab(size = 2) +
+  geom_text2(aes(label = node), size = 2, hjust = -0.3) +
+  ggtitle("Rooted tree with node numbers")
+```
+
+Use these node numbers to define clades. For example, to label all tips descending from node 113 as "Clade X":
+
+```{r}
+# Extract tips from node 113
+tips_113 <- tree_subset(rooted_dna, node = 113, levels_back = 0)$tip.label
+
+# Create a data frame that assigns clade to each tip
+clade_df <- tibble(tip = tips_113, Clade = "Clade X")
+
+# Plot with color
+ggtree(rooted_dna) %<+% clade_df +
+  geom_tiplab(size = 2) +
+  geom_tippoint(aes(color = Clade), size = 2) +
+  scale_color_brewer(palette = "Set1", na.translate = FALSE) +
+  ggtitle("Tree with Clade X")
+```
+
+### Challenge 1: Identify the 3 major clades in the tree. Give them each a name (e.g. Clade A, B, C) and annotate them on the tree. Are the groups well-supported?
+
+```{r}
+# Extract tips from node 58
+tips_90 <- tree_subset(rooted_dna, node = 90, levels_back = 0)$tip.label
+tips_86 <- tree_subset(rooted_dna, node = 86, levels_back = 0)$tip.label
+tips_71 <- tree_subset(rooted_dna, node = 71, levels_back = 0)$tip.label
+
+# Create a data frame that assigns clade to each tip
+clade_df_A<- tibble(tip = tips_90, Clade = "Clade A")
+clade_df_B<- tibble(tip = tips_86, Clade = "Clade B")
+clade_df_C<- tibble(tip = tips_71, Clade = "Clade C")
+
+clade_df_ABC<- rbind(clade_df_A, clade_df_B, clade_df_C)
+str(clade_df_ABC)
+
+# Plot with color
+ggtree(rooted_dna) %<+% clade_df_ABC +
+  geom_tiplab(size = 2) +
+  geom_tippoint(aes(color = Clade), size = 2) +
+  scale_color_brewer(palette = "Set1", na.translate = FALSE) +
+  ggtitle("Tree with Clades A, B, and C")
+```
+The groups are relatively well supported because they include a common ancestors and all descendants in a clear arrangement, as a clade should by definition.
+
+### Challenge 2: Does the protein sequence data show the same pattern? Hint: Repeat steps above to build a rooted, labeled, bootstrap-annotated tree with protein sequence data and compare tree topology.
+
+```{r}
+# Load sequences
+aa <- readAAStringSet("coi_protein.fasta")
+
+# Align sequences
+aa_aln <- msa(aa, method = "ClustalW")
+```
+
+```{r}
+# Convert aligned sequences to phyDat format
+aa_phy <- as.phyDat(msaConvert(aa_aln, type = "seqinr"), type = "AA")
+
+# View structure in the console
+aa_phy
+```
+
+```{r}
+#Estimate pairwise distances and construct a starting tree using neighbor joining
+# Create initial tree
+tree_aa <- NJ(dist.ml(aa_phy))
+```
+
+We then apply a model of sequence evolution to calculate the maximum likelihood tree. This model accounts for how different types of nucleotide substitutions occur over time. For DNA data, we use the GTR model (General Time Reversible), a widely used and flexible model that allows different substitution rates for each pair of nucleotides. This helps improve the accuracy of tree estimation, especially when sequences have evolved under complex patterns of change.
+
+```{r}
+# Maximum likelihood optimization
+fit_aa <- optim.pml(pml(tree_aa, data = aa_phy), model = "WAG")
+```
+
+```{r}
+# Visualize tree
+ggtree(fit_aa$tree) + 
+geom_tiplab() + 
+ggtitle("Maximum likelihood tree (AA)")
+```
+
+```{r}
+# Re-root the tree on the most recent common ancestor of hexactis tips
+rooted_aa <- root(fit_aa$tree, outgroup = "L. hexactis AF162095", resolve.root = TRUE)
+
+# Plot the rooted tree
+ggtree(rooted_aa) +
+  geom_tiplab() +
+  ggtitle("Rooted tree using L. hexactis")
+```
+
+```{r}
+# # Add bootstrap values to tree object
+# bs_aa <- bootstrap.pml(fit_aa, bs = 100, optNni = TRUE)
+# tree_bsaa <- plotBS(fit_aa$tree, bs_aa, type = "none")
+# 
+# # Visualize in ggtree
+# ggtree(tree_bsaa) +
+#   geom_tiplab() +
+#   geom_text2(aes(label = label), hjust = -0.3) +
+#   ggtitle("ML tree with bootstrap support (AA)")
+```
+
+```{r}
+ggtree(rooted_aa) +
+  geom_tiplab(size = 2) +
+  geom_text2(aes(label = node), size = 2, hjust = -0.3) +
+  ggtitle("Rooted tree with node numbers")
+```
+
+The protein sequences do not show the same patterns. There are much more unresolved lineages in comparison to the DNA tree, which indicates similarity among individuals regarding their encoded proteins despite differences in nucleotide sequences.
+
+### Discussion Question Answers
+c. To test whether genetic structure reflects geographic isolation, I would create a matrix pairing genetic distance with geographic distance and perform a Mantel test.
+d. This analysis does give some information about the potential for cryptic species in the *Leptasterias* genus, especially given the functional similarity of the encoded protein. However, much more information (behavioral, ecological, ontogenetic, etc.) that could potentially point to differences in species is necessary to make a call on the presence of cryptic species.
+
+

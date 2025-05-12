@@ -1,0 +1,139 @@
+---
+title: "Chapter 12 Generalized Linear Models"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### Rodent Diversity and Infected Tick Density
+
+### Research Question 1: Does rodent richness predict the density of *Borrelia*-infected ticks?
+
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+# importing the gene dataset
+tick <- read.csv("tick.csv",header=TRUE,stringsAsFactors = TRUE)
+str(tick)
+```
+
+### Question Answers 
+a. The 'tick' dataset contains 46 observations of 58 variables.
+b. The variable 'DIN_Bbsl' is an integer response variable.
+
+### Section 2 - Fitting a Poisson GLM
+
+We are using a Poisson model here because our response variable(tick infection density)is a count. Poisson models are designed for count data that are non-negative integers and often right-skewed. In Poisson GLMs, the variance increases with the mean, which often fits ecological count data better than assuming constant variance and normality.
+
+```{r}
+# Fit GLM with Poisson family
+tick_glm <- glm(DIN_Bbsl ~ Rodent_Rich, family = "poisson", data = tick)
+summary(tick_glm)
+```
+
+### Stop, Think, Do: 
+The coefficient for rodent richness is 0.484 and it represents the predicted increase in the logged count of infected ticks with each additional rodent species. In this model, the coefficient for rodent richness is statistically significant, with a p-value of 2.55*10^-10.
+
+### Section 3 - Plotting the GLM Predictions
+
+After fitting a GLM, it’s useful to visualize the model predictions alongside your raw data. To do this, we can use the predict() function, which takes a fitted model and returns predicted values. These predictions can then be added as a new column in our dataset and plotted against the observed data to assess model fit and shape.
+
+```{r}
+# Add model predictions to the dataset
+tick$predicted <- predict(tick_glm, type = "response")
+
+# Plot observed and predicted values
+ggplot(tick, aes(x = Rodent_Rich, y = DIN_Bbsl)) +
+  geom_point(alpha = 0.6) +
+  geom_line(aes(y = predicted), color = "red", size = 1) +
+  labs(
+    x = "Rodent richness",
+    y = "Density of infected nymphs (DIN_Bbsl)",
+    title = "Predicted vs. Observed: GLM for Infected Tick Density") +
+  theme_minimal()
+```
+
+### Challenge 1: Improve the above plot using an in-figure label.
+
+```{r}
+# Plot observed and predicted values
+ggplot(tick, aes(x = Rodent_Rich, y = DIN_Bbsl)) +
+  geom_point(alpha = 0.6) +
+  geom_line(aes(y = predicted), color = "red", size = 1) +
+  annotate('text', x=Inf, y=Inf, label = paste0("AIC: 489.83"), hjust=1, vjust=1, , size=6)+
+  labs(
+    x = "Rodent richness",
+    y = "Density of infected nymphs (DIN_Bbsl)",
+    title = "Predicted vs. Observed: GLM for Infected Tick Density") +
+  theme_minimal()
+```
+
+### Section 4 - Plotting Model Diagnostics
+
+```{r}
+# Diagnostic plots for GLM
+plot(tick_glm)
+```
+
+### Question Answers
+a. In the residuals vs predicted plot, there are a few outliers throughout, with a slight increase in variation as predicted values increase. In the Q-Q plot, it is evident that the data does not employ a normal distribution.
+
+### Section 5 - Adding Another Predictor
+
+In Chapter 10, we explored how using two explanatory variables together can help reveal interactions or explain more variation in a response. Here, we’ll test whether adding another biologically relevant predictor - predator diversity — improves our model of tick infection density. This step mirrors the idea of exploring multiple factors at once, just as we did with two-way ANOVA, but it is not the same since it does not explicitly explore interaction.
+
+```{r}
+# Compare two GLMs with AIC
+tick_glm2 <- glm(DIN_Bbsl ~ Rodent_Rich + Predator_Shannon_wCat, family = "poisson", data = tick)
+
+summary(tick_glm2)
+
+AIC(tick_glm, tick_glm2)
+```
+
+### Question Answer
+a. The model that includes predator diversity with cats in addition to rodent species richness has the lower AIC when compared to the one with only rodent species richness.
+b. Predator diversity only slightly added meaningful information to the model, as tick nymph infection density was not significantly impacted by predator diversity. AICs were very similar, with this model having a better balance of simplicity and fit.
+
+### Challenge 2: What if some unmeasured differences among sampling locations are influencing your results?
+
+```{r}
+# Random effect of site
+library(glmmTMB)
+tick_glm_site <- glmmTMB(DIN_Bbsl ~ Rodent_Rich + Predator_Shannon_wCat + (1|Site), family = 'poisson', data = tick)
+summary(tick_glm_site)
+
+# Compare the GLMs with AIC
+AIC(tick_glm2, tick_glm_site)
+
+```
+
+Accounting for site does greatly improve the model fit, but it does make the explanatory variable of rodent species richness lose statistical significance when combined with predator density. This suggests that the model using site as a random effect explains much more of the variation than just the fixed effects of rodents and predators.
+
+### Challenge 3: Fit a new model with both site and year as random effects.
+
+```{r}
+# Random effect of site and year
+tick_glm_site_year <- glmmTMB(DIN_Bbsl ~ Rodent_Rich + Predator_Shannon_wCat + (1|Site) + (1|Year), family = 'poisson', data = tick)
+summary(tick_glm_site_year)
+
+# Compare the GLMs with AIC
+AIC(tick_glm_site, tick_glm_site_year)
+```
+Accounting for site and year does improve the model fit, and it highlights the explanatory variable of rodent species richness as statistically significant once again when combined with the fixed effects of predator density. A lower AIC suggests that the model using site and year as a random effect explains much more of the variation than just the random effect of site, combined with fixed effects of rodents and predators. This could be because the number of all organisms and species (ticks, rodents, and predators) vary greatly from year-to-year, so comparing one year to another might not be very fair in a model.
+
+### Discussion Question Answers
+a. A GLM is different from a linear model in that it is able to analyze non-normal numerical data to generate an equation of best fit.
+b. A Poisson GLM uses a log link function to create a best-fit model for positive interger values that have a right-skewed distribution (i.e. count data). The log link function works by exponentiating the relationship between the slope formula-adapted linear predictor variables and the response variables.
+c. AIC tells us whether one GLM model is better than another at balancing simplicity with fit
+
+
+

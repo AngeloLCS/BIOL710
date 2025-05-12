@@ -1,0 +1,196 @@
+---
+title: "Chapter 11 Correlation and Regression Analyses"
+author: "Angelo LaCommare-Soto"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### Functional Associations in the Genome
+
+### Research Question 1: Do large genomes have higher number of genes encoding DNA polymerase III alpha subunit?
+
+### Section 1 - Importing Data
+
+```{r, setup}
+# set working directory for all chunks in this file (default working directory is wherever Rmd file is)
+getwd()
+library(tidyverse)
+```
+
+```{r}
+# importing the gene dataset
+gene <- read.table("genomics.txt",header=TRUE,sep="\t",stringsAsFactors = TRUE)
+str(gene)
+```
+
+### Question Answers 
+a. Given the question 'Do large genomes have higher number of genes encoding DNA polymerase III alpha subunit?', we are interested in the 'N_Gene_tot' and  'DNApol_III_a_sub' variables.
+b. Both the 'N_Gene_tot' and 'DNApol_III_a_sub' variables are integer numeric variables, and their relationship can be shown by a scatter plot with a line of best fit.
+
+### Section 2 - Plotting the Data
+
+### Challenge 1: Plot the Data for Appropriate Visualization
+
+```{r}
+p1<-ggplot(gene, aes(x=N_Gene_tot, y=DNApol_III_a_sub))+
+  geom_point()+
+  ylab("Number of Genes Encoding DNA Polymerase III alpha subunit")+
+  xlab("Number of Genes in Entire Genome")+
+  theme_classic()
+p1
+```
+
+### Question Answers
+a. The data demonstrates a pattern of wide variation among genomes below about 8000 genes in size, as well as a slight shift to the right in the density of data points as genes in the genome increase.
+b. I predict that there will be a very slight positive correlation between the number of genes in an entire genome and the number of genes that encode for DNA polymerase III alpha subunit.
+
+### Section 3 - Estimating the Correlation Coefficient
+
+```{r}
+# Pearson correlation
+
+library(rstatix)
+
+gene1_cor <- cor_test(DNApol_III_a_sub, N_Gene_tot, data=gene)
+
+#correlation coefficient
+r <- gene1_cor$cor
+
+r
+```
+
+```{r}
+# We can also visualize the correlation coefficient for all the possible combinations of variables. The R package corrplot has many visualizations for correlation matrices where we can plot all correlations from a dataset for more efficient visual explorations. For that, let’s convert “gene” into a matrix using the function as.matrix() and unselect non-numeric columns (i.e., Strain) from “gene”.
+
+# converting gene into a matrix
+gene2 <- as.matrix(subset(gene,select=-c(Strain)))
+
+# correlation coefficient
+gene3 <- cor(gene2,method="pearson")
+
+# installing corrplot
+# previously installed
+
+# loading package
+library(corrplot)
+
+# "corrplot" with different visual methods
+corrplot(gene3, method = "circle")
+corrplot(gene3, method = "color")
+corrplot(gene3, method = "color",type="lower")
+```
+
+### Section 4 - Estimating the Standard Error of the Correlation Coefficient (r)
+
+```{r}
+# sample size
+n <- 1351
+n
+
+# standard error of r
+r_se <- sqrt((1-r^2)/(n-2))
+r_se
+```
+
+### Section 5 - Testing the Hypothesis Using the t-test
+
+```{r}
+# t-test for correlation analysis
+gene1_cor
+
+# manually calculating t-statistic
+t <- r/r_se
+t
+```
+
+### Question Answer
+a. Using a statistical table for the t-distribution (statsexamples.com), we can see that the null expectation for a critical value of 0.025 is t=1.962 with 1000 degrees of freedom. As our estimated t-statistic is much more extreme at 13.48, p is less than 0.05 and we reject the null hypothesis. Additionally, the estimated p-value in the correlation test is infinitesimally small at 5.72*10^-39.
+
+### Section 6 - Estimating the Regression
+
+```{r}
+# We can also fit a linear regression to test whether the number of genes encoding DNA polymerase III alpha subunit can be predicted by the length of the genome. For this, we use the function lm() where the first argument is the response variable, followed by the explanatory variable (separated by “~”), and the dataframe.
+
+# linear regression
+lm1 <- lm(DNApol_III_a_sub~N_Gene_tot, data=gene) 
+
+# summary of the model output
+summary(lm1)
+```
+
+### Question Answers
+a. The results of the linear regression model indicate that, on average, each one-integer increase in the number of total genes comprising a genome corresponds to an increase in the number of genes that encode for DNA polymerase III alpha subunit by 1.8*10^-4.
+b. Thus, the linear regression formula is: 
+y (number of genes that encode for DNA polymerase III alpha subunit) = (1.8*10^-4) x + 0.735.
+
+```{r}
+# fitting a line to p2 to visualize patterns 
+p2 <- p1 + geom_smooth(method="lm",se=TRUE) 
+
+p2
+```
+
+### Question Answer
+a. The number of DNA polymerase III alpha subunit genes is predicted to increase by 1.8*10^-4 for every one genome length increase.
+
+### Challenge 2: Carry out your own analysis! The tRNA-synthetase are enzymes that attach amino acids to the tRNA. Amino acids are the building blocks of proteins and organisms need at least 20 of these enzymes; 1 for each of the 20 existent amino acids. However, some organisms have been described to have more than 20 tRNA-synthetases. Researchers suspect that having more than 20 tRNA-synthetases supports a “faster” protein production. (1) Generate a related research question and (2) test it with your new gained skills, and (3) plot your data!
+
+### Question Answers
+a. Research Question: Do organisms that have higher numbers of tRNA-synthetases exhibit faster protein production by encoding more X16 rRNA subunits?
+
+```{r}
+# Pearson correlation
+
+tRNA <- cor_test(X16rRNA, tRNA_synthetase, data=gene)
+
+#correlation coefficient
+r1 <- tRNA$cor
+
+r1
+```
+
+```{r}
+# standard error of r
+r1_se <- sqrt((1-r1^2)/(n-2))
+r1_se
+```
+
+```{r}
+# t-test for correlation analysis
+tRNA
+
+# manually calculating t-statistic
+t1 <- r1/r1_se
+t1
+```
+
+```{r}
+# linear regression
+lm2 <- lm(X16rRNA~tRNA_synthetase, data=gene)
+
+# summary of the model output
+summary(lm2)
+```
+```{r}
+p3<-ggplot(gene, aes(x=tRNA_synthetase, y=X16rRNA))+
+  geom_point()+
+  ylab("Number of X16 rRNA genes")+
+  xlab("Number of tRNA synthetase enzymes")+
+  geom_smooth(method="lm",se=TRUE)+
+  geom_vline(xintercept=20)+
+  theme_classic()
+p3
+```
+
+b. Using a statistical table for the t-distribution (statsexamples.com), we can see that the null expectation for a critical value of 0.025 is t=1.962 with 1000 degrees of freedom. As our estimated t-statistic is much more extreme at 9.50, p is less than 0.05 and we reject the null hypothesis. Additionally, the estimated p-value in the correlation test is extremely small at 8.54*10^-21.
+
+### Discussion Question Answers
+a. One would want to fit a linear regression model to their data to both determine the direction of a relationship between variables and create a predictive equation to estimate values of the dependent variable based on a hypothetical value of the independent variable.
+b. A scatter plot of two associated variables presenting a low standard error of r would demonstrate a majority of data points creating a single diagonal line.
+c. A strong correlation does not imply cause and effect because there could be a number of confounding variables that could be contributing to the strong correlation.
+
+
+
+
